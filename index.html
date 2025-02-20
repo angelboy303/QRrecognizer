@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Scanner</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #87CEEB; /* 하늘색 배경 */
+        }
+        #fileInput {
+            display: none;
+        }
+        .upload-icon {
+            width: 100px;
+            height: 100px;
+            background: url('https://cdn-icons-png.flaticon.com/512/126/126477.png') no-repeat center center;
+            background-size: contain;
+            cursor: pointer;
+        }
+        .upload-text {
+            margin-top: 10px;
+        }
+        .drop-zone {
+            border: 2px dashed #ccc;
+            border-radius: 10px;
+            padding: 20px;
+            width: 300px;
+            text-align: center;
+            position: relative;
+        }
+        .drop-zone.dragover {
+            border-color: #000;
+            background-color: rgba(255, 255, 255, 0.5); /* 반투명 흰색 음영 */
+        }
+    </style>
+</head>
+<body>
+    <h1>QR Code Scanner</h1>
+    <p>QR코드를 붙여넣거나 직접 업로드해주세요</p>
+    <label for="fileInput" class="upload-icon"></label>
+    <input type="file" id="fileInput" accept="image/*">
+    <p class="upload-text">클릭하여 이미지 업로드</p>
+    <div class="drop-zone" id="dropZone">또는 여기에 이미지를 드래그 앤 드롭하세요</div>
+    <canvas id="canvas" style="display:none;"></canvas>
+    <p id="result"></p>
+
+    <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script>
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const canvas = document.getElementById('canvas');
+        const context = canvas.getContext('2d');
+        const result = document.getElementById('result');
+        const dropZone = document.getElementById('dropZone');
+
+        fileInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                processFile(file);
+            }
+        });
+
+        document.addEventListener('paste', (event) => {
+            const items = event.clipboardData.items;
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type.indexOf('image') !== -1) {
+                    const blob = items[i].getAsFile();
+                    processFile(blob);
+                }
+            }
+        });
+
+        dropZone.addEventListener('dragover', (event) => {
+            event.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', (event) => {
+            event.preventDefault();
+            dropZone.classList.remove('dragover');
+            const file = event.dataTransfer.files[0];
+            if (file) {
+                processFile(file);
+            }
+        });
+
+        function processFile(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    context.drawImage(img, 0, 0, img.width, img.height);
+                    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                    const code = jsQR(imageData.data, canvas.width, canvas.height);
+                    if (code) {
+                        result.textContent = `QR Code Data: ${code.data}`;
+                        window.location.href = code.data;
+                    } else {
+                        result.textContent = 'No QR code found.';
+                    }
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+    </script>
+</body>
+</html>
