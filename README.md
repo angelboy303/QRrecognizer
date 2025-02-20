@@ -1,0 +1,2 @@
+# QRrecognizer
+QRrecognizer
